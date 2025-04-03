@@ -25,7 +25,7 @@ In many platforms, image management relies on manual processes:
 Snap2Caption aims to improve the following metrics:
 
 - **User Engagement**: Increase in interactions and time spent on content.
-- - **Metadata Coverage**: Achieve comprehensive image tagging.
+- **Metadata Coverage**: Achieve comprehensive image tagging.
 - **Content Discoverability**: Enhanced search precision and recall.
 - **User Retention**: Higher satisfaction leading to repeat usage.
 - **Accessibility Compliance**: More content meeting accessibility standards.
