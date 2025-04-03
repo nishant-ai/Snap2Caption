@@ -136,7 +136,3 @@ Snap2Caption aims to improve the following metrics:
 **Lecture Alignment**: Relates to Unit 3 on software engineering practices.
 
 **Optional Difficulty Points**: Implementing blue-green deployments and comprehensive test coverage.
-
----
-
-This README provides a structured overview of the Snap2Caption project, detailing its value proposition, current limitations in the field, targeted business metrics, contributor roles, system architecture, external resources, infrastructure needs, and a comprehensive design plan.
