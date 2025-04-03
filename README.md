@@ -45,8 +45,6 @@ Snap2Caption aims to improve the following metrics:
 
 ![System Diagram](https://github.com/nishant-ai/Snap2Caption/blob/main/SystemDesign.jpeg)
 
-*Note: Diagram to include hardware, software platforms, models, and data flow.*
-
 ### Summary of Outside Materials
 
 | Component       | Creation Details               | Conditions of Use                         |
