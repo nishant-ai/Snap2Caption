@@ -24,10 +24,8 @@ In many platforms, image management relies on manual processes:
 
 Snap2Caption aims to improve the following metrics:
 
-- **User Engagement**: Increase in interactions and time spent on content.
 - **Metadata Coverage**: Achieve comprehensive image tagging.
 - **Content Discoverability**: Enhanced search precision and recall.
-- **User Retention**: Higher satisfaction leading to repeat usage.
 - **Accessibility Compliance**: More content meeting accessibility standards.
 - **Operational Efficiency**: Reduced manual effort in content management.
 
@@ -81,7 +79,7 @@ Snap2Caption aims to improve the following metrics:
 - **Hyperparameter Optimization**: Conducted using Ray Tune for optimal performance.
 - **Experiment Tracking**: Managed with MLFlow, ensuring reproducibility and transparency.
 
-**Lecture Alignment**: Incorporates concepts from Units 4 and 5, focusing on model development and optimization.
+**Lecture Alignment**: Incorporates concepts from [Unit 4](https://ffund.github.io/ml-sys-ops/docs/units/4-model-training-scale.html) and [Unit 5](https://ffund.github.io/ml-sys-ops/docs/units/5-training-platform.html), focusing on model development and optimization.
 
 **Optional Difficulty Points**: Implementing distributed training and advanced hyperparameter tuning.
 
@@ -98,7 +96,7 @@ Snap2Caption aims to improve the following metrics:
 
 **Justification**: Ensures responsive and reliable service delivery.
 
-**Lecture Alignment**: Addresses Units 6 and 7, covering deployment and monitoring.
+**Lecture Alignment**: Addresses [Unit 6](https://ffund.github.io/ml-sys-ops/docs/units/6-serving.html) and [Unit 7](https://ffund.github.io/ml-sys-ops/docs/units/7-eval-monitor.html), covering deployment and monitoring.
 
 **Optional Difficulty Points**: Implementing model quantization and real-time monitoring dashboards.
 
@@ -115,7 +113,7 @@ Snap2Caption aims to improve the following metrics:
 
 **Justification**: Facilitates seamless data flow and model performance tracking.
 
-**Lecture Alignment**: Pertains to Unit 8 on data engineering.
+**Lecture Alignment**: Pertains to [Unit 8](#) on data engineering.
 
 **Optional Difficulty Points**: Real-time data processing and integration with CI/CD pipelines.
 
@@ -131,6 +129,6 @@ Snap2Caption aims to improve the following metrics:
 
 **Justification**: Promotes development efficiency and system reliability.
 
-**Lecture Alignment**: Relates to Unit 3 on software engineering practices.
+**Lecture Alignment**: Relates to [Unit 3](https://ffund.github.io/ml-sys-ops/docs/units/3-devops.html) on software engineering practices.
 
 **Optional Difficulty Points**: Implementing blue-green deployments and comprehensive test coverage.
