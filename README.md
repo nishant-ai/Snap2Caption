@@ -3,11 +3,11 @@
 ## AI-Powered Image Analysis System
 
 ### Value Proposition
-Snap2Caption is an AI-driven image analysis system that automates image captioning and object detection. We propose a machine learning solution that can be integrated into existing social media platforms such as LinkedIn, Instagram, or Pinterest to enhance user experience by automatically generating meaningful image captions.
+Snap2Caption is an AI-driven image analysis system designed to automate image captioning and object detection. We propose a machine learning solution that can be seamlessly integrated into Instagram to enhance the user experience by automatically generating meaningful image captions which helps users create engaging content more efficiently.
 
 ### Current Non-ML Status Quo
 
-In many platforms, image management relies on manual processes:
+In Instagram, image management relies on manual processes:
 
 - **Manual Tagging**: Users add captions and tags inconsistently, leading to unstructured metadata.
 - **Limited Searchability**: Incomplete metadata hampers content discovery.
