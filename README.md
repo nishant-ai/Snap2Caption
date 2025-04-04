@@ -3,13 +3,7 @@
 ## AI-Powered Image Analysis System
 
 ### Value Proposition
-
-Snap2Caption is an AI-driven image analysis system that automates image captioning and object detection. By integrating into existing platforms, it enhances user engagement, improves content discoverability, streamlines operations, and ensures accessibility compliance. Applications include:
-
-- **Social Media**: Auto-generating captions to boost user interaction.
-- **Assistive Technology**: Describing surroundings for visually impaired users.
-- **Surveillance**: Summarizing footage for efficient monitoring.
-- **E-commerce**: Auto-tagging product images to enhance searchability.
+Snap2Caption is an AI-driven image analysis system that automates image captioning and object detection. We propose a machine learning solution that can be integrated into existing social media platforms such as LinkedIn, Instagram, or Pinterest to enhance user experience by automatically generating meaningful image captions.
 
 ### Current Non-ML Status Quo
 
@@ -45,13 +39,14 @@ Snap2Caption aims to improve the following metrics:
 
 ### Summary of Outside Materials
 
-| Component       | Creation Details               | Conditions of Use                         |
-|-----------------|--------------------------------|-------------------------------------------|
-| MS COCO Dataset | Created by Microsoft for research | Open access for research and commercial use |
-| Flickr30K       | Academic project dataset       | Research use with attribution             |
-| YOLOv5          | Developed by Ultralytics       | Open-source under MIT license             |
-| ResNet-50       | Microsoft Research             | Open model weights available              |
-| GPT-2 Medium    | OpenAI                         | Open weights with usage restrictions      |
+| Component       | Creation Details               | Conditions of Use                         | Official Link |
+|----------------|--------------------------------|-------------------------------------------|---------------|
+| **MS COCO Dataset** | Created by Microsoft for research | Open access for research and commercial use | [cocodataset.org](https://cocodataset.org/#home) |
+| **Flickr30K**       | Academic project dataset       | Research use with attribution             | [Flickr30K Dataset](https://shannon.cs.illinois.edu/DenotationGraph/) |
+| **YOLOv5**          | Developed by Ultralytics       | Open-source under MIT license             | [YOLOv5 GitHub](https://github.com/ultralytics/yolov5) |
+| **ResNet-50**       | Microsoft Research             | Open model weights available              | [ResNet-50 on PyTorch Hub](https://pytorch.org/vision/stable/models.html#id14) |
+| **GPT-2 Medium**    | OpenAI                         | Open weights with usage restrictions      | [GPT-2 (Hugging Face)](https://huggingface.co/gpt2-medium) |
+
 
 ### Infrastructure Requirements
 
