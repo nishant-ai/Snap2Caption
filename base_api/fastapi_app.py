@@ -2,10 +2,19 @@
 
 from fastapi import FastAPI, UploadFile, File
 from fastapi.responses import JSONResponse
+from fastapi.middleware.cors import CORSMiddleware
 from PIL import Image
 import io
 
 app = FastAPI()
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Allow all origins for now (development)
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 @app.post("/generate-caption/")
 async def generate_caption_api(file: UploadFile = File(...)):
