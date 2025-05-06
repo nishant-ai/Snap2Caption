@@ -1,0 +1,80 @@
+version: "3.8"
+
+services:
+  postgres:
+    image: postgres:15
+    container_name: postgres
+    restart: always
+    environment:
+      POSTGRES_USER: admin_postgres
+      POSTGRES_PASSWORD: project54_postgres
+      POSTGRES_DB: mlflowdb
+    volumes:
+      - /mnt/mlops-storage/postgres:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+  minio:
+    image: minio/minio
+    container_name: minio
+    command: server /data --console-address ":9001"
+    restart: always
+    environment:
+      MINIO_ROOT_USER: admin_minio
+      MINIO_ROOT_PASSWORD: project54_minio
+    volumes:
+      - /mnt/mlops-storage/minio:/data
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    healthcheck:
+      test: timeout 5 bash -c ':> /dev/tcp/127.0.0.1/9000' || exit 1
+      interval: 2s
+      timeout: 10s
+      retries: 5
+
+  minio-create-bucket:
+    image: minio/mc
+    depends_on:
+      minio:
+        condition: service_healthy
+    entrypoint: >
+      /bin/sh -c "
+      mc alias set minio http://minio:9000 admin_minio project54_minio &&
+      if ! mc ls minio/mlflow-artifacts; then
+        mc mb minio/mlflow-artifacts &&
+        echo 'Bucket mlflow-artifacts created';
+      else
+        echo 'Bucket mlflow-artifacts already exists';
+      fi"
+
+  mlflow:
+    image: ghcr.io/mlflow/mlflow:v2.20.2
+    container_name: mlflow
+    restart: always
+    depends_on:
+      - postgres
+      - minio
+      - minio-create-bucket
+    environment:
+      MLFLOW_TRACKING_URI: http://0.0.0.0:8000
+      MLFLOW_S3_ENDPOINT_URL: http://minio:9000
+      AWS_ACCESS_KEY_ID: admin_minio
+      AWS_SECRET_ACCESS_KEY: project54_minio
+    command: >
+      /bin/sh -c "pip install psycopg2-binary boto3 &&
+      mlflow server
+      --backend-store-uri postgresql://admin_postgres:project54_postgres@postgres/mlflowdb
+      --artifacts-destination s3://mlflow-artifacts/
+      --serve-artifacts
+      --host 0.0.0.0 --port 8000"
+    ports:
+      - "8000:8000"
+
+  ray-head:
+    image: rayproject/ray:2.10.0
+    container_name: ray-head
+    command: >
+      ray start --head --port=6379
+    ports:
+      - "6379:6379"
