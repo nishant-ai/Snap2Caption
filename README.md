@@ -127,3 +127,5 @@ Snap2Caption aims to improve the following metrics:
 **Lecture Alignment**: Relates to [Unit 3](https://ffund.github.io/ml-sys-ops/docs/units/3-devops.html) on software engineering practices.
 
 **Optional Difficulty Points**: Implementing blue-green deployments and comprehensive test coverage.
+
+# MLOPS---Project-Snap2Caption
