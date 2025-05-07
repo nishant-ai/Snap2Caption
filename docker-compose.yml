@@ -1,0 +1,139 @@
+version: "3.9"
+
+services:
+  extract-data:
+    container_name: etl_extract_data
+    image: python:3.11
+    user: root
+    volumes:
+      - instacities1m:/data
+    working_dir: /data
+    command:
+      - bash
+      - -c
+      - |
+        set -e
+
+        echo "Installing pip, unzip, curl..."
+        apt-get update && apt-get install -y unzip curl
+        curl -sS https://bootstrap.pypa.io/get-pip.py | python3
+
+        echo "Installing gdown..."
+        pip install gdown
+
+        echo "Cleaning any previous dataset..."
+        rm -rf InstaCities1M InstaCities1M_ InstaCities1M.zip
+
+        echo "Downloading dataset from Google Drive..."
+        gdown --fuzzy "https://drive.google.com/uc?id=1rdzmmcMPSpMvV43ycW9UUk3CmZyD3x4L" -O InstaCities1M.zip || { echo "❌ gdown failed"; exit 1; }
+
+        echo "Inspecting ZIP contents..."
+        unzip -l InstaCities1M.zip | head -n 20
+
+        echo "Unzipping dataset to /data..."
+        unzip -q InstaCities1M.zip
+        rm -f InstaCities1M.zip
+
+        echo "✅ Listing final structure under /data:"
+        ls -Rlh /data
+
+  transform-data:
+    container_name: etl_transform_data
+    image: python:3.11
+    volumes:
+      - instacities1m:/data
+    working_dir: /data
+    command:
+      - bash
+      - -c
+      - |
+        set -e
+
+        python3 -c '
+        import os
+        import shutil
+        import random
+        from pathlib import Path
+
+        root = Path("/data/InstaCities1M_")
+        caption_dir = root / "captions_resized_1M" / "cities_instagram"
+        image_dir = root / "img_resized_1M" / "cities_instagram"
+        output_root = Path("/data/InstaCities1M_Processed")
+        splits = {"Training": 0.8, "Testing": 0.1, "Evaluation": 0.1}
+
+        random.seed(42)
+
+        for city_folder in caption_dir.iterdir():
+            if not city_folder.is_dir():
+                continue
+
+            city_name = city_folder.name
+            print(f"Processing city: {city_name}")
+
+            captions = list(city_folder.glob("*.txt"))
+            paired_files = []
+
+            for caption_file in captions:
+                base_name = caption_file.stem
+                image_file = image_dir / city_name / f"{base_name}.jpg"
+                if image_file.exists():
+                    paired_files.append((caption_file, image_file))
+
+            random.shuffle(paired_files)
+            total = len(paired_files)
+            train_end = int(total * splits["Training"])
+            test_end = train_end + int(total * splits["Testing"])
+
+            data_split = {
+                "Training": paired_files[:train_end],
+                "Testing": paired_files[train_end:test_end],
+                "Evaluation": paired_files[test_end:]
+            }
+
+            for split_name, files in data_split.items():
+                for txt_file, img_file in files:
+                    city_base = output_root / split_name / "cities_instagram" / city_name
+                    cap_target = city_base / "captions_resized_1M"
+                    img_target = city_base / "img_resized_1M"
+                    cap_target.mkdir(parents=True, exist_ok=True)
+                    img_target.mkdir(parents=True, exist_ok=True)
+                    shutil.copy2(txt_file, cap_target / txt_file.name)
+                    shutil.copy2(img_file, img_target / img_file.name)
+
+        print("✅ Dataset split and organized with new structure.")
+        '
+
+        echo "✅ Listing contents of /data after transform stage:"
+        ls -l /data/InstaCities1M_Processed
+
+  load-data:
+    container_name: etl_load_instacities
+    image: rclone/rclone:latest
+    volumes:
+      - instacities1m:/data
+      - ~/.config/rclone/rclone.conf:/root/.config/rclone/rclone.conf:ro
+    entrypoint: /bin/sh
+    command:
+      - -c
+      - |
+        if [ -z "$RCLONE_CONTAINER" ]; then
+          echo "ERROR: RCLONE_CONTAINER is not set"
+          exit 1
+        fi
+
+        echo "Cleaning up existing contents in remote container..."
+        rclone delete chi_tacc:$RCLONE_CONTAINER --rmdirs || true
+
+        echo "Uploading InstaCities1M_Processed to object store..."
+        rclone copy /data/InstaCities1M_Processed chi_tacc:$RCLONE_CONTAINER \
+          --progress \
+          --transfers=32 \
+          --checkers=16 \
+          --multi-thread-streams=4 \
+          --fast-list
+
+        echo "✅ Upload complete. Listing remote directories:"
+        rclone lsd chi_tacc:$RCLONE_CONTAINER
+
+volumes:
+  instacities1m:
