@@ -1,2 +1,9 @@
+# Terraform State
+terraform.tfstate
+terraform.tfstate.backup
+
+# Terraform Modules
+.terraform/
+
+# Sensitive YAML
 clouds.yaml
-terraform.tfvars
