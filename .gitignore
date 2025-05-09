@@ -1,9 +1,27 @@
-# Terraform State
+# Local Terraform state
 terraform.tfstate
 terraform.tfstate.backup
 
-# Terraform Modules
+# Terraform plan files
+*.tfplan
+
+# Crash log files
+crash.log
+
+# Terraform provider cache
 .terraform/
 
-# Sensitive YAML
+# Sensitive configuration files
 clouds.yaml
+terraform.tfvars
+
+# Backup files
+*.backup
+
+# Logs and history
+*.log
+.history
+
+# OS-specific files
+.DS_Store
+Thumbs.db

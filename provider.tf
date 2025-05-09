@@ -1,3 +1,5 @@
+# provider.tf
+
 terraform {
   required_providers {
     openstack = {
@@ -8,5 +10,11 @@ terraform {
 }
 
 provider "openstack" {
-  cloud = "openstack"
+  alias = "kvm"
+  cloud = "kvm"
+}
+
+provider "openstack" {
+  alias = "chiuc"
+  cloud = "chiuc"
 }

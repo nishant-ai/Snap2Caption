@@ -1,5 +1,17 @@
-auth_url     = "https://chi.tacc.chameleoncloud.org:5000/v3/"
-region       = "RegionOne"
+# terraform.tfvars
 
-application_credential_id     = "e035338d5e1d4510a34dd279d964c0eb"
-application_credential_secret = "ziQ8_7G3T-U35Iy19p40A0BA_Yg8vCSkNvXGfICTzF68FV8fZ1l5pDwf4SHBkcAnMWeIWTUIUw-fX1QMJnSQRg"
+# ------------------------------
+# KVM@TACC Configuration
+# ------------------------------
+kvm_auth_url                       = "https://kvm.tacc.chameleoncloud.org:5000/v3/"
+kvm_region                         = "KVM@TACC"
+kvm_application_credential_id      = "YOUR_KVM_CREDENTIAL_ID"
+kvm_application_credential_secret  = "YOUR_KVM_CREDENTIAL_SECRET"
+
+# ------------------------------
+# CHI@UC Configuration
+# ------------------------------
+chiuc_auth_url                       = "https://chi.uc.chameleoncloud.org:5000/v3/"
+chiuc_region                         = "CHI@UC"
+chiuc_application_credential_id      = "YOUR_CHIUC_CREDENTIAL_ID"
+chiuc_application_credential_secret  = "YOUR_CHIUC_CREDENTIAL_SECRET"
