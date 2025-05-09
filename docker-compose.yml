@@ -24,8 +24,11 @@ services:
         echo "Cleaning any previous dataset..."
         rm -rf InstaCities1M InstaCities1M_ InstaCities1M.zip
 
-        echo "Downloading dataset from Google Drive..."
-        gdown --fuzzy "https://drive.google.com/uc?id=1rdzmmcMPSpMvV43ycW9UUk3CmZyD3x4L" -O InstaCities1M.zip || { echo "❌ gdown failed"; exit 1; }
+        echo "Installing aria2 and unzip..."
+        apt-get update && apt-get install -y unzip aria2
+
+        echo "Downloading dataset from CVC server using aria2c..."
+        aria2c -x 16 -s 16 -k 1M -o InstaCities1M.zip "http://datasets.cvc.uab.es/InstaCities1M/InstaCities1M.zip" || { echo "❌ aria2c download failed"; exit 1; }
 
         echo "Inspecting ZIP contents..."
         unzip -l InstaCities1M.zip | head -n 20
@@ -55,19 +58,30 @@ services:
         import random
         from pathlib import Path
 
-        root = Path("/data/InstaCities1M_")
+        # Original dataset paths
+        root = Path("/data/")
         caption_dir = root / "captions_resized_1M" / "cities_instagram"
         image_dir = root / "img_resized_1M" / "cities_instagram"
+
+        # Output path
         output_root = Path("/data/InstaCities1M_Processed")
         splits = {"Training": 0.8, "Testing": 0.1, "Evaluation": 0.1}
 
+        # Only process these cities
+        target_cities = {"chicago", "newyork", "sanfrancisco"}
+
+        # Ensure reproducibility
         random.seed(42)
 
+        # Process each city folder
         for city_folder in caption_dir.iterdir():
             if not city_folder.is_dir():
                 continue
 
-            city_name = city_folder.name
+            city_name = city_folder.name.lower()
+            if city_name not in target_cities:
+                continue
+
             print(f"Processing city: {city_name}")
 
             captions = list(city_folder.glob("*.txt"))
@@ -79,6 +93,7 @@ services:
                 if image_file.exists():
                     paired_files.append((caption_file, image_file))
 
+            # Shuffle and split
             random.shuffle(paired_files)
             total = len(paired_files)
             train_end = int(total * splits["Training"])
@@ -90,6 +105,7 @@ services:
                 "Evaluation": paired_files[test_end:]
             }
 
+            # Copy files to new folder structure
             for split_name, files in data_split.items():
                 for txt_file, img_file in files:
                     city_base = output_root / split_name / "cities_instagram" / city_name
@@ -97,6 +113,7 @@ services:
                     img_target = city_base / "img_resized_1M"
                     cap_target.mkdir(parents=True, exist_ok=True)
                     img_target.mkdir(parents=True, exist_ok=True)
+
                     shutil.copy2(txt_file, cap_target / txt_file.name)
                     shutil.copy2(img_file, img_target / img_file.name)
 
@@ -122,10 +139,10 @@ services:
         fi
 
         echo "Cleaning up existing contents in remote container..."
-        rclone delete chi_tacc:$RCLONE_CONTAINER --rmdirs || true
+        rclone delete chi_uc:$RCLONE_CONTAINER --rmdirs || true
 
         echo "Uploading InstaCities1M_Processed to object store..."
-        rclone copy /data/InstaCities1M_Processed chi_tacc:$RCLONE_CONTAINER \
+        rclone copy /data/InstaCities1M_Processed chi_uc:$RCLONE_CONTAINER \
           --progress \
           --transfers=32 \
           --checkers=16 \
@@ -133,7 +150,8 @@ services:
           --fast-list
 
         echo "✅ Upload complete. Listing remote directories:"
-        rclone lsd chi_tacc:$RCLONE_CONTAINER
+        rclone lsd chi_uc:$RCLONE_CONTAINER
 
 volumes:
   instacities1m:
+
