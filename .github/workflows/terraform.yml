@@ -1,0 +1,46 @@
+name: Terraform CI
+
+on:
+  push:
+    branches:
+      - feature/terraform-setup
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  terraform:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Check out the repository
+      uses: actions/checkout@v3
+
+    - name: Setup Terraform
+      uses: hashicorp/setup-terraform@v2
+      with:
+        terraform_version: 1.5.3
+
+    - name: Validate Terraform
+      run: terraform validate
+
+    - name: Lint Terraform
+      run: tflint
+
+    - name: Terraform Plan
+      env:
+        OS_CLIENT_CONFIG_FILE: clouds.yaml
+      run: terraform plan -var-file="terraform.tfvars"
+
+    - name: Archive Terraform Plan
+      if: ${{ github.event_name == 'pull_request' }}
+      run: terraform plan -out=tfplan
+
+    - name: Upload Terraform Plan Artifact
+      if: ${{ github.event_name == 'pull_request' }}
+      uses: actions/upload-artifact@v3
+      with:
+        name: terraform-plan
+        path: tfplan
+
+
