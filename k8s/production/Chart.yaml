@@ -1,0 +1,5 @@
+apiVersion: v2
+name: snap2caption-production
+version: 1.0.0
+description: Snap2Caption Production Deployment
+
