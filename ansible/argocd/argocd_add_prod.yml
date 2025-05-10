@@ -4,7 +4,7 @@
   become: yes
   vars:
     app_name: snap2caption-production
-    repo_url: https://github.com/teaching-on-testbeds/snap2caption.git
+    repo_url: https://github.com/nishant-ai/Snap2Caption
     app_path: k8s/production
     argocd_namespace: argocd
 

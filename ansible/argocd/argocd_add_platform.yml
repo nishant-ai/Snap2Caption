@@ -4,7 +4,7 @@
   become: yes
   vars:
     argocd_username: "admin"
-    repo_path: "https://github.com/teaching-on-testbeds/snap2caption.git"
+    repo_path: "https://github.com/nishant-ai/Snap2Caption"
     app_name: "snap2caption-platform"
     app_path: "k8s/platform"
     minio_access_key: "your-access-key"

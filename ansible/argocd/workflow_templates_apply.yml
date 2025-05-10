@@ -3,7 +3,7 @@
   hosts: node1
   become: yes
   vars:
-    repo_url: https://github.com/teaching-on-testbeds/snap2caption.git
+    repo_url: https://github.com/nishant-ai/Snap2Caption
     repo_dest: /tmp/snap2caption
     workflow_dir: workflows
     argo_namespace: argo
