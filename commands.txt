@@ -1,21 +1,24 @@
 ### Merge Models
 
+git clone -b model_serving_endpoint https://github.com/nishant-ai/Snap2Caption.git
+
+### Docker File for Model Optimization
+docker build -f Dockerfile.optimization -t merge-model .
+
 docker run --rm \
-  -v $(pwd)/config.yaml:/app/config.yaml \
+  --gpus all   \
+  -v $(pwd)/config_model_inference.yaml:/app/config_model_inference.yaml \
   -v $(pwd)/model_optimization.py:/app/model_optimization.py \
   -v $(pwd)/models:/models \
   merge-model
 
 
-## Run Trition Server 
-docker build -f Dockerfile.triton -t triton-llava-server .
+### Build Docker FIle for Fast API 
 
+docker build -f Dockerfile.fastapi -t llava-fastapi-server .
 
 docker run --gpus all --rm \
-  -p8000:8000 -p8001:8001 -p8002:8002 \
-  -v /home/cc/triton_models:/models \
-  -v /home/cc/LLAVA_MERGED:/models/LLAVA_MERGED \
-  triton-llava \
-  tritonserver --model-repository=/models \
-               --model-control-mode=explicit \
-               --load-model=llava_captioner
+  -p 8000:8000 \
+  -v /home/cc/Snap2Caption/models/LLAVA_MERGED:/lora_adapters \
+  -v /home/cc/Snap2Caption:/app \
+  llava-fastapi-server

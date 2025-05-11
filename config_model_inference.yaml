@@ -1,6 +1,6 @@
 base_model_id: "llava-hf/llava-v1.6-mistral-7b-hf"
-lora_adaptors: "lora_adapters_1"
-output_path: "./LLAVA_MERGED"
+lora_adaptors: "/models/LLAVA_MERGED/lora_adapters_1"
+output_path: "/models/LLAVA_MERGED"
 mlflow:
   uri: "http://129.114.25.254:8000"
   run_name: "llava-hf/llava-v1.6-mistral-7b-hf"

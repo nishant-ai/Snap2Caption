@@ -26,23 +26,16 @@ RUN_ID = config.mlflow.run_id
 mlflow.set_tracking_uri(MLFLOW_URI)
 client = MlflowClient()
 
-# See all versions and stages
-#versions = client.get_latest_versions(MLFLOW_RUN_NAME)
-#for v in versions:
-#    print(f"Version: {v.version}, Stage: {v.current_stage}, Source: {v.source}, Run ID: {v.run_id}")
-
-
 lora_dir = download_artifacts(
     run_id=RUN_ID,
     artifact_path="lora_adapters_1",
-    dst_path = './'
+    dst_path = OUTPUT_PATH
 )
 print("LoRA downloaded to:", lora_dir)
 
 # Merging LORA and Base MODEL
 base_model_id = BASE_MODEL_ID
-adapter_path = LORA_ADAPTORS:q
-
+adapter_path = LORA_ADAPTORS
 
 # === Load Processor and Model (once at startup) ===
 processor = LlavaNextProcessor.from_pretrained(base_model_id)
@@ -68,15 +61,6 @@ tokenizer.chat_template = (
 
 output_path = OUTPUT_PATH
 os.makedirs(output_path, exist_ok=True)
-
-output_path = OUTPUT_PATH
-model.save_pretrained(output_path)
-model.config.save_pretrained(output_path)
-processor.save_pretrained(output_path)
-tokenizer.save_pretrained(output_path)
-
-os.makedirs("outputs/triton_models/llava_captioner/1", exist_ok=True)
-
 
 # === Define Functional Interface ===
 def generate_caption(image_path: str) -> str:
