@@ -1,0 +1,26 @@
+FROM python:3.10-slim
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+# --- 1. Install system dependencies ---
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    git wget curl && \
+    apt-get clean && rm -rf /var/lib/apt/lists/*
+
+# --- 2. Install required Python libraries ---
+RUN pip install --upgrade pip && \
+    pip install torch mlflow peft omegaconf transformers "trl>=0.8.3"
+
+# --- 3. Set working directory ---
+WORKDIR /app
+
+# --- 4. Download image using wget and rename it ---
+RUN wget "https://images.unsplash.com/photo-1573261658953-8b29e144d1af?w=900&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8NHx8YnJvb2tseW58ZW58MHx8MHx8fDA%3D" \
+    -O Brooklyn_bridge.jpg && mv Brooklyn_bridge.jpg download.jpeg
+
+# --- 6. Copy model_optimization.py from host at runtime (mounted volume expected) ---
+# We will **not** COPY it in Dockerfile. Instead, the script will be passed in from the host.
+# You’ll mount it like: `-v $(pwd)/model_optimization.py:/app/model_optimization.py`
+
+# --- 7. Run the model_optimization.py script ---
+CMD ["python", "model_optimization.py"]

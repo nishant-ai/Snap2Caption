@@ -1,0 +1,10 @@
+FROM nvcr.io/nvidia/tritonserver:23.12-py3
+
+# Install Python & pip
+RUN apt update && apt install -y python3 python3-pip
+
+# Install required Python dependencies
+RUN pip3 install torch transformers peft pillow
+
+# Set default model repo
+ENV MODEL_REPO=/models

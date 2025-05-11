@@ -1,0 +1,22 @@
+name: "llava_captioner"
+backend: "python"
+
+max_batch_size: 8
+
+input [
+  { name: "image", data_type: TYPE_STRING, dims: [1] },
+  { name: "prompt", data_type: TYPE_STRING, dims: [1] }
+]
+
+output [
+  { name: "caption", data_type: TYPE_STRING, dims: [1] }
+]
+
+instance_group [
+  { kind: KIND_GPU, count: 1, gpus: [0] }
+]
+
+dynamic_batching {
+  preferred_batch_size: [2, 4]
+  max_queue_delay_microseconds: 100
+}

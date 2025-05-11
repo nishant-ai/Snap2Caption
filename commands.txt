@@ -1,0 +1,21 @@
+### Merge Models
+
+docker run --rm \
+  -v $(pwd)/config.yaml:/app/config.yaml \
+  -v $(pwd)/model_optimization.py:/app/model_optimization.py \
+  -v $(pwd)/models:/models \
+  merge-model
+
+
+## Run Trition Server 
+docker build -f Dockerfile.triton -t triton-llava-server .
+
+
+docker run --gpus all --rm \
+  -p8000:8000 -p8001:8001 -p8002:8002 \
+  -v /home/cc/triton_models:/models \
+  -v /home/cc/LLAVA_MERGED:/models/LLAVA_MERGED \
+  triton-llava \
+  tritonserver --model-repository=/models \
+               --model-control-mode=explicit \
+               --load-model=llava_captioner
