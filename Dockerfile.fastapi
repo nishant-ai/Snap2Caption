@@ -27,7 +27,8 @@ RUN pip install \
     uvicorn \
     pillow \
     typing_extensions \
-    python-multipart
+    python-multipart \
+    prometheus_client
 
 # Set working directory
 WORKDIR /app
