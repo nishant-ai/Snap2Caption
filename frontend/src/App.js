@@ -56,31 +56,87 @@ function App() {
     }
   };
 
+  // const uploadImage = async () => {
+  //   if (!image) {
+  //     alert('Please select an image first.');
+  //     return;
+  //   }
+  //   const formData = new FormData();
+  //   formData.append('file', image);
+
+  //   try {
+  //     const response = await fetch('http://192.5.86.161:8000/generate_caption', {
+  //       method: 'POST',
+  //       body: formData,
+  //     });
+  //     const data = await response.json();
+  //     setCaption(data.caption || data.error || 'Error generating caption.');
+  //   } catch (error) {
+  //     console.error(error);
+  //     setCaption('Failed to communicate with server.');
+  //   }
+  // };
+
   const uploadImage = async () => {
     if (!image) {
       alert('Please select an image first.');
       return;
     }
-    const formData = new FormData();
-    formData.append('file', image);
+  
+    const reader = new FileReader();
+  
+    reader.onloadend = async () => {
+      // Extract base64 string from data URL
+      const base64Image = reader.result.split(',')[1];
+  
+      const payload = {
+        image: base64Image,
+        prompt: "You are a social media influencer. Write a captivating Instagram caption for this image." // you can make this dynamic
+      };
+  
+      try {
+        const response = await fetch('http://192.5.86.161:8000/generate_caption', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(payload)
+        });
+  
+        const data = await response.json();
+        const rawCaption = data.caption;
+        const parts = rawCaption.split('[/INST]');
+        const cleanedCaption = parts.length > 1 ? parts[1].trim() : rawCaption;
 
-    try {
-      const response = await fetch('http://127.0.0.1:8000/generate-caption/', {
-        method: 'POST',
-        body: formData,
-      });
-      const data = await response.json();
-      setCaption(data.caption || data.error || 'Error generating caption.');
-    } catch (error) {
-      console.error(error);
-      setCaption('Failed to communicate with server.');
-    }
+        // setCaption(cleanedCaption);
+        setCaption(cleanedCaption || data.error || 'Error generating caption.');
+      } catch (error) {
+        console.error(error);
+        setCaption('Failed to communicate with server.');
+      }
+    };
+  
+    reader.readAsDataURL(image); // Triggers `onloadend`
   };
+  
 
+  // const rateCaption = (feedback) => {
+  //   if (feedback === 'up') {
+  //     alert('Thank you for your positive feedback! 👍');
+  //   } else {
+  //     alert('Thanks for the feedback! We will improve! 👎');
+  //   }
+  // };
   const rateCaption = (feedback) => {
     if (feedback === 'up') {
       alert('Thank you for your positive feedback! 👍');
     } else {
+      const reason = prompt('We’re sorry to hear that. Could you tell us what was wrong?');
+      if (reason !== null && reason.trim() !== '') {
+        console.log('User feedback:', reason);
+      } else {
+        console.log('User gave negative feedback but didn’t leave a comment.');
+      }
       alert('Thanks for the feedback! We will improve! 👎');
     }
   };
