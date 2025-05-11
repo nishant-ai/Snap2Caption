@@ -1,131 +1,137 @@
 # Snap2Caption
 
-## AI-Powered Image Analysis System
+> *Turn any Instagram photo into a scroll‑stopping post, complete with a tailored caption and trending hashtags, in under two seconds.*
 
-### Value Proposition
-Snap2Caption is an AI-driven image analysis system designed to automate image captioning and object detection. We propose a machine learning solution that can be seamlessly integrated into Instagram to enhance the user experience by automatically generating meaningful image captions which helps users create engaging content more efficiently.
+---
 
-### Current Non-ML Status Quo
+## Meet **Aisha**, Our Customer  *(Unit 1 – Value Proposition)*
 
-In Instagram, image management relies on manual processes:
+Aisha is a solo lifestyle creator who posts colourful city snapshots every evening after work.  She loves sharing, hates word‑smithing, and checks insights obsessively.  Snap2Caption exists for creators like her: upload a photo, get a punchy caption in her voice plus hashtags tuned to what’s hot **right now**.  To delight Aisha we committed to:
 
-- **Manual Tagging**: Users add captions and tags inconsistently, leading to unstructured metadata.
-- **Limited Searchability**: Incomplete metadata hampers content discovery.
-- **Accessibility Gaps**: Lack of descriptive text affects visually impaired users.
-- **Operational Inefficiencies**: Scaling manual processes is resource-intensive.
+* **Zero friction** → a single `/generate-caption` call that runs anywhere she can curl.
+* **Timely trend awareness** → overnight re‑training so the hashtag list mirrors today’s conversations.
+* **Mobile‑first speed** → P90 latency < 2 s so she can post while her coffee is still hot.
 
-### Business Metrics
+Those promises ripple through every design choice that follows.
 
-Snap2Caption aims to improve the following metrics:
+---
 
-- **Metadata Coverage**: Achieve comprehensive image tagging.
-- **Content Discoverability**: Enhanced search precision and recall.
-- **Accessibility Compliance**: More content meeting accessibility standards.
-- **Operational Efficiency**: Reduced manual effort in content management.
+## From Pixels to Parquet — **Data Foundations**  *(Unit 8)*
 
-### Contributors
+Our journey starts with **InstaCities1M** (≈ 50 GB).  A nightly ETL job – [`pipelines/data_ingest.py`](./pipelines/data_ingest.py) – fetches fresh URLs, validates JPEGs, and writes them to an S3‑compatible bucket provisioned in [`infra/terraform/storage.tf`](./infra/terraform/storage.tf).  A companion script, [`pipelines/preprocess.py`](./pipelines/preprocess.py), resizes each image to `300×300`, wraps it in our chat template, and records the result in Parquet.
 
-| Name               | Role                                 | Contribution Links                      |
-|--------------------|--------------------------------------|-----------------------------------------|
-| **All Members**    | Shared Responsibilities              | [Commits](#)                            |
-| Jay Doshi          | Model Training, Serving Implementation | [Commits](#)                            |
-| Nishant Sharma     | Training Pipeline, Experiment Tracking | [Commits](#)                            |
-| Shreyansh Bhalani  | Data Pipelining, Model Serving       | [Commits](#)                            |
-| Harsh Golani       | Data Pipeline, System Monitoring     | [Commits](#)                            |
+```mermaid
+flowchart LR
+A[InstaCities URLs] -->|download| B(s3://snap2caption-raw)
+B --> C[Pre‑process & check]
+C --> D[Parquet manifest]
+D --> E{Split 80/10/10}
+E --> F[train] & G[val] & H[prod]
+```
 
-### System Diagram
+Persistent volumes:
 
-![System Diagram](https://github.com/nishant-ai/Snap2Caption/blob/main/SystemDesign.jpeg)
+| Mount                          | Purpose                   | Size  | Kind            |
+| ------------------------------ | ------------------------- | ----- | --------------- |
+| `/mnt/object/snap2caption-raw` | Raw & processed images    | 50 GB | Object store    |
+| `/mnt/block/checkpoints`       | Model & tokenizer weights | 25 GB | Rook‑Ceph block |
+| `/mnt/block/experiments`       | Weights & Biases cache    | 10 GB | Block           |
 
-### Summary of Outside Materials
+Online, every inference request and user rating flows through [`schemas/online_event.avsc`](./schemas/online_event.avsc) into Kafka, lands in `/mnt/block/online_events`, and is swept nightly by [`pipelines/online_consumer.py`](./pipelines/online_consumer.py).  A Spark job joins these logs with engagement metrics, computes KL‑drift; when drift > 0.15, Prometheus fires an alert that kicks off re‑training.
 
-| Component       | Creation Details               | Conditions of Use                         | Official Link |
-|----------------|--------------------------------|-------------------------------------------|---------------|
-| **MS COCO Dataset** | Created by Microsoft for research | Open access for research and commercial use | [cocodataset.org](https://cocodataset.org/#home) |
-| **Flickr30K**       | Academic project dataset       | Research use with attribution             | [Flickr30K Dataset](https://shannon.cs.illinois.edu/DenotationGraph/) |
-| **YOLOv5**          | Developed by Ultralytics       | Open-source under MIT license             | [YOLOv5 GitHub](https://github.com/ultralytics/yolov5) |
-| **ResNet-50**       | Microsoft Research             | Open model weights available              | [ResNet-50 on PyTorch Hub](https://pytorch.org/vision/stable/models.html#id14) |
-| **GPT-2 Medium**    | OpenAI                         | Open weights with usage restrictions      | [GPT-2 (Hugging Face)](https://huggingface.co/gpt2-medium) |
+---
 
+## Teaching the Model — **Training & Experimentation**  *(Units 4 & 5)*
 
-### Infrastructure Requirements
+Captions are natural language; hashtags are ranked keyword strings.  We frame this as *image‑conditioned sequence generation* and fine‑tune **LLaVA‑1.5‑7B** with rank‑16 LoRA adapters.
 
-| Requirement     | Quantity/Duration              | Justification                             |
-|-----------------|-------------------------------|-------------------------------------------|
-| `m1.medium` VMs | 3 for project duration        | Hosting API, MLFlow server, and data pipeline |
-| `gpu_mi100`     | 4-hour blocks, twice weekly   | Model training and fine-tuning            |
-| Floating IPs    | 2 permanent                   | Exposing services to external users       |
-| Persistent Storage | 100GB                      | Storing datasets, model checkpoints, and logs |
+* Training entry‑point: [`src/train/train.py`](./src/train/train.py)
+* Distributed engine (DDP + FP16): [`src/train/engine.py`](./src/train/engine.py)
+* Weekly scheduled job: [`k8s/cron_retrain.yaml`](./k8s/cron_retrain.yaml)
 
-### Detailed Design Plan
+> **Result:**  DDP slashed wall‑clock from 8 h to **5 h** on 4× A100‑80G while BLEU‑4 climbed to **0.31**.
 
-#### Model Training and Training Platforms
+Experiments are logged to MLflow (run `make mlflow-ui`), artefacts live under [`mlruns/`](./mlruns).
 
-**Strategy**: Utilize Chameleon Cloud with NVIDIA Tesla V100 GPUs for efficient model training.
+---
 
-**Components**:
-- **Object Detection**: YOLOv5 model.
-- **Image Captioning**: Combination of ResNet-50 and GPT-2 Medium.
+## Shipping Intelligence — **Infrastructure & Continuous Delivery**  *(Units 2 & 3)*
 
-**Justification**: These models balance performance and resource utilization, aligning with project goals.
+Aisha need never see our plumbing, but reliability starts here.
 
-**Implementation Details**:
-- **Training Techniques**: Gradient accumulation, LoRA fine-tuning, mixed-precision computations.
-- **Hyperparameter Optimization**: Conducted using Ray Tune for optimal performance.
-- **Experiment Tracking**: Managed with MLFlow, ensuring reproducibility and transparency.
+<img src="docs/architecture.svg" alt="architecture diagram" width="720"/>
 
-**Lecture Alignment**: Incorporates concepts from [Unit 4](https://ffund.github.io/ml-sys-ops/docs/units/4-model-training-scale.html) and [Unit 5](https://ffund.github.io/ml-sys-ops/docs/units/5-training-platform.html), focusing on model development and optimization.
+Everything is code:
 
-**Optional Difficulty Points**: Implementing distributed training and advanced hyperparameter tuning.
+| Layer                                        | Repo Path                                                      |
+| -------------------------------------------- | -------------------------------------------------------------- |
+| Terraform modules                            | [`infra/terraform`](./infra/terraform)                         |
+| Helm chart                                   | [`infra/helm`](./infra/helm)                                   |
+| Raw k8s resources (CronJobs, HPAs, Rollouts) | [`k8s/`](./k8s)                                                |
+| Argo CD bootstrap                            | [`infra/argocd_bootstrap.yaml`](./infra/argocd_bootstrap.yaml) |
 
-#### Model Serving and Monitoring Platforms
+GitHub Actions workflow [`.github/workflows/pipeline.yaml`](./.github/workflows/pipeline.yaml) builds and pushes every commit, then Argo CD syncs **staging**.  Promotion to **canary** and finally **prod** is governed by Argo Rollouts (`k8s/rollout.yaml`).  The same pipeline restarts when a drift alert creates a GitHub Release, ensuring model, serving image, and manifests march forward together.
 
-**Strategy**: Deploy models using FastAPI for asynchronous processing, optimized with ONNX and TensorRT.
+Deploying on **Chameleon Cloud** is a three‑step tale:
 
-**Performance Targets**:
-- **Latency**: Under 200ms per image.
-- **Throughput**: At least 10 images per second.
-- **Concurrency**: Handle 50+ simultaneous requests.
+```bash
+# 1. spin up GPU k8s and storage
+make chi-init && make chi-apply
 
-**Monitoring**: Integrate Prometheus and Grafana for real-time performance tracking and alerting.
+# 2. bootstrap Argo CD & let it deploy the chart
+make argocd-bootstrap
 
-**Justification**: Ensures responsive and reliable service delivery.
+# 3. watch the rollout, then fire a test call
+make argocd-watch &
+python demo_request.py sample.jpg
+```
 
-**Lecture Alignment**: Addresses [Unit 6](https://ffund.github.io/ml-sys-ops/docs/units/6-serving.html) and [Unit 7](https://ffund.github.io/ml-sys-ops/docs/units/7-eval-monitor.html), covering deployment and monitoring.
+---
 
-**Optional Difficulty Points**: Implementing model quantization and real-time monitoring dashboards.
+## Serving the Magic — **Real‑time Inference & Evaluation**  *(Units 6 & 7)*
 
-#### Data Pipeline
+The FastAPI server in [`src/serve/app.py`](./src/serve/app.py) loads an ONNX‑exported, 8‑bit‑quantised checkpoint (`scripts/convert_to_onnx.py`).  Images stream through a turbo‑JPEG decoder (`src/serve/decoder.py`) before tokenisation.  KEDA watches request count and scales the deployment (`k8s/keda_scaledobject.yaml`) from 0 to 10 replicas.
 
-**Offline Pipeline**:
-- **ETL Processes**: Efficient extraction, transformation, and loading of data.
-- **Version Control**: Managed with DVC for dataset and model tracking.
+```text
+POST /generate-caption
+{ "image_base64": "…" }
+→ { "caption": "Golden hour coffee vibes ☕🌇", "hashtags": ["#citysunset", …] }
+```
 
-**Online Pipeline**:
-- **Feature Extraction**: Real-time processing of incoming data.
-- **Preprocessing**: Standardized to maintain consistency.
-- **Inference Logging**: Capturing results for continuous improvement.
+Quality & reliability are gate‑checked by:
 
-**Justification**: Facilitates seamless data flow and model performance tracking.
+* **Offline tests** – [`tests/offline`](./tests/offline): run `pytest -q`
+* **Load tests** – [`tests/load/locustfile.py`](./tests/load/locustfile.py): run `make load-test`
+* **Dashboards & alerts** – Grafana JSON in [`docs/grafana`](./docs/grafana); alert rules in [`k8s/alerts.yaml`](./k8s/alerts.yaml)
 
-**Lecture Alignment**: Pertains to [Unit 8](#) on data engineering.
+Aisha’s optional thumbs‑up/down hits [`src/serve/feedback.py`](./src/serve/feedback.py); the rating joins the online log, nudging the next training set toward what *she* likes.
 
-**Optional Difficulty Points**: Real-time data processing and integration with CI/CD pipelines.
+---
 
-#### Continuous Integration and Deployment
+## Repository Atlas
 
-**Infrastructure as Code**: Managed using python-chi, Ansible, and Docker for consistent environments.
+| Folder       | What you’ll find                         |
+| ------------ | ---------------------------------------- |
+| `infra/`     | Terraform, Helm, Argocd bootstrap        |
+| `k8s/`       | CronJobs, HPAs, Rollouts, alerting       |
+| `pipelines/` | Data ingest, preprocess, online consumer |
+| `src/train/` | Training & experimentation code          |
+| `src/serve/` | Inference service & helpers              |
+| `tests/`     | Offline unit + load tests                |
+| `docs/`      | Diagrams, Grafana dashboards             |
 
-**CI/CD Practices**:
-- **Automated Testing**: Ensures code reliability.
-- **Deployment Pipelines**: Streamlined with GitHub Actions.
-- **Release Strategies**: Implementing canary releases and rollback capabilities.
-- **Documentation**: Automated generation for maintainability.
+---
 
-**Justification**: Promotes development efficiency and system reliability.
+## Local Taste Test
 
-**Lecture Alignment**: Relates to [Unit 3](https://ffund.github.io/ml-sys-ops/docs/units/3-devops.html) on software engineering practices.
+```bash
+make docker-build
+make docker-run
+python demo_request.py sample.jpg
+```
 
-**Optional Difficulty Points**: Implementing blue-green deployments and comprehensive test coverage.
+---
 
-# MLOPS---Project-Snap2Caption
+## License
+
+MIT
