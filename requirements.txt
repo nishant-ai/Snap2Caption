@@ -1,0 +1,9 @@
+transformers
+peft 
+bitsandbytes
+"trl>=0.8.3"
+evaluate
+datasets
+rouge_score
+torchao
+omegaconf

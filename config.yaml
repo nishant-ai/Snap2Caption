@@ -1,0 +1,46 @@
+# === Experiment Metadata ===
+run_name: llava-7b-ft-instagram-v2
+project: Snap2Caption
+model_name: LLaVA-7B-HF (LLaVA-1.5-7B)
+task: Image Captioning
+notes: Baseline fine-tuning on InstaCities1M with 4-bit quantized model and LoRA adapters.
+
+
+# === Data Configs ===
+dataset:
+  name: InstaCities1M
+  cities: ["newyork"]
+  base_images_dir: /mnt/InstaCities1M/images/img_resized_1M/cities_instagram/
+  base_captions_dir: /mnt/InstaCities1M/captions/captions_resized_1M/cities_instagram/
+  output_jsonl_path: ./datasset_v1.jsonl
+
+llava_prompt: >
+  You are a social media influencer. Write a captivating Instagram caption for this image
+  that will engage more viewers and boost interaction. Analyze the image to decide the tone of the caption.
+
+# === Model Config ===
+model:
+  id: llava-hf/llava-1.5-7b-hf
+  save_path: ./llava_lora_instagram
+
+lora:
+  r: 32
+  alpha: 64
+  dropout: 0.05
+  target_modules: ["q_proj", "k_proj", "v_proj"]
+
+# === Training Config ===
+training:
+  batch_size: 4
+  grad_accum_steps: 8
+  epochs: 10
+  learning_rate: 1e-4
+  logging_steps: 50
+  weight_decay: 0.01
+
+# === Infra Config ===
+mlflow_ip: http://129.114.25.254:8000
+
+
+# Dynamic run description
+description: "${run_name} - ${model_name} | LoRA_R ${lora.r} | LoRA_ALPHA ${lora.alpha} | ${dataset.name} | EPOCHS=${training.epochs}"

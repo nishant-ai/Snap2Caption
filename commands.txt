@@ -1,0 +1,20 @@
+git clone training branch  (Requirements.txt, dockerfile )
+
+
+# Building Docker File
+docker build -f Dockerfile.trainingenv -t snap2caption-trainer .
+
+
+docker run --rm \
+  --gpus all \
+  --shm-size 16G \
+  -v $(pwd):/app \
+  --mount type=bind,source=/mnt/images,target=/mnt/InstaCities1M/images,readonly \
+  --mount type=bind,source=/mnt/captions,target=/mnt/InstaCities1M/captions,readonly \
+  --mount type=bind,source=./config.yaml,target=/configs/config.yaml,readonly \
+  -w /app \
+  snap2caption-trainer \
+  python training.py \
+    --images_dir /mnt/InstaCities1M/images \
+    --captions_dir /mnt/InstaCities1M/captions \
+    --config /configs/config.yaml
