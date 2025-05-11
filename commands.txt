@@ -2,6 +2,8 @@
 
 git clone -b model_serving_endpoint https://github.com/nishant-ai/Snap2Caption.git
 
+cd Snap2Caption 
+
 ### Docker File for Model Optimization
 docker build -f Dockerfile.optimization -t merge-model .
 
