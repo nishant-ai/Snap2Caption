@@ -238,6 +238,57 @@ docker run ... \
   ...
 ```
 
+🔄 Data Pipeline (ETL)
+The offline data pipeline is composed of three main stages:
+
+🔹 Extract
+Downloads the InstaCities1M.zip dataset using aria2 for fast, parallelized download via multiple connections.
+
+🔹 Transform
+Filters image-caption pairs for the following cities:
+
+css
+Copy
+Edit
+["newyork", "chicago", "sanfrancisco"]
+Converts all folder names to lowercase for consistency.
+
+Verifies and matches each image to a valid caption.
+
+🔹 Load
+Uploads the cleaned and structured dataset to Chameleon Object Storage.
+
+Container: object-persist-sbb9447-project54
+
+Accessible at: Chameleon UC Dashboard
+
+📦 Storage Volume
+All dataset stages are persisted under the volume:
+
+nginx
+
+instacities1m
+🔗 Code References
+See the extract-data, transform-data, and load-data services in
+docker-compose.yml
+
+🧹 Data Split & Preprocessing
+Dataset was shuffled and split using an 80/10/10 ratio:
+
+80% Training
+
+10% Validation
+
+10% Testing
+
+Care was taken to avoid data leakage between partitions.
+
+Preprocessing Steps:
+Lowercased all folder and city names
+
+Ensured one-to-one matching between images and captions
+
+Removed corrupted or unmatched image-caption pairs
 ---
 
 ### ✅ Storage Strategy Summary
