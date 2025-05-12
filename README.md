@@ -1,1 +1,0 @@
-# MLOPS---Project-Snap2Caption

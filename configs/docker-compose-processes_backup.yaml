@@ -1,24 +1,6 @@
 version: "3.8"
 
 services:
-  label-studio:
-    image: heartexlabs/label-studio:1.16.0
-    container_name: label-studio
-    ports:
-      - "8080:8080"
-    volumes:
-      - /home/cc/eval-loop-chi/scripts:/label-studio/scripts
-    environment:
-      - LABEL_STUDIO_URL=http://label-studio:8085
-      - LABEL_STUDIO_USERNAME=labelstudio54@example.com
-      - LABEL_STUDIO_PASSWORD=labelstudio54
-      - LABEL_STUDIO_USER_TOKEN=ab9927067c51ff279d340d7321e4890dc2841c4a
-      - POSTGRES_HOST=app-db
-      - POSTGRES_PORT=5432
-      - POSTGRES_USER=admin_postgres
-      - POSTGRES_PASSWORD=project54_postgres
-      - POSTGRES_DB= mlflowdb
-
   postgres:
     image: postgres:15
     container_name: postgres
@@ -93,33 +75,6 @@ services:
     image: rayproject/ray:2.10.0
     container_name: ray-head
     command: >
-      ray start --head --port=6379 --dashboard-host 0.0.0.0 --
+      ray start --head --port=6379
     ports:
       - "6379:6379"
-      - "8265:8265"
-    restart: always
-
-
-  prometheus:
-    image: prom/prometheus
-    container_name: prometheus
-    restart: always
-    volumes:
-      - /mnt/mlops-storage/prometheus:/etc/prometheus
-      - /mnt/mlops-storage/prometheus/data:/prometheus/data
-    command:
-      - '--config.file=/etc/prometheus/prometheus.yml'
-    ports:
-      - "9090:9090"
-
-  grafana:
-    image: grafana/grafana-oss
-    container_name: grafana
-    restart: always
-    environment:
-      - GF_INSTALL_PLUGINS=grafana-piechart-panel
-    volumes:
-      - /mnt/mlops-storage/grafana:/var/lib/grafana
-      - /mnt/mlops-storage/grafana/plugins:/var/lib/grafana/plugins
-    ports:
-      - "3000:3000"

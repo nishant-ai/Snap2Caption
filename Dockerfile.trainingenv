@@ -1,28 +1,33 @@
-# Base image with PyTorch and CUDA 12 support
 FROM pytorch/pytorch:2.2.1-cuda12.1-cudnn8-runtime
 
-# Set working directory
 WORKDIR /app
 
-# Create a non-root user (optional but safer)
+# Create non-root user
 ARG USER=mluser
 ARG UID=1000
 RUN useradd -m -u $UID $USER
 
-# Set environment variables
 ENV NB_USER=$USER
 ENV NB_UID=$UID
 
-# Copy requirements and install
+# Install core and extra pip requirements
 COPY requirements.txt .
 RUN pip install --upgrade pip && \
-    pip install --no-cache-dir -r requirements.txt
+    pip install --no-cache-dir -r requirements.txt && \
+    pip install --no-cache-dir \
+        mlflow \
+        pynvml \
+        lightning \
+        Pillow \
+        matplotlib \
+        scikit-learn \
+        pandas \
+        tensorboard \
+        tqdm \
+        pyyaml \
+        huggingface_hub
 
-# Install additional tools
-RUN pip install --no-cache-dir mlflow pynvml lightning
-
-# Set user (you can skip this if running as root is acceptable)
+# Switch to non-root user
 USER $NB_UID
 
-# Default command; can be overridden at runtime
 CMD ["python", "training.py"]
