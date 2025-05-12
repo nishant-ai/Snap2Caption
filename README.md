@@ -1,140 +1,125 @@
 # Snap2Caption
 
-> *Turn any Instagram photo into a scroll‑stopping post, complete with a tailored caption and trending hashtags, in under two seconds.*
+> *Generate an Instagram‑ready caption and a list of high‑engagement hashtags from any photograph in a single API call.*
 
 ---
 
-## Meet **Aisha**, Our Customer  *(Unit 1 – Value Proposition)*
+## 1 · Who We Serve — Aisha *(Value Proposition)*
 
-Aisha is a solo lifestyle creator who posts colourful city snapshots every evening after work. She loves sharing, hates word‑smithing, and checks insights obsessively. Snap2Caption exists for creators like her: upload a photo, get a punchy caption in her voice plus hashtags tuned to what’s hot **right now**.
+Aisha is a solo lifestyle creator who snaps urban photos during her commute. She wants to post consistently but hates spending time on copy‑writing and keyword research. **Snap2Caption** lets her drop an image into a mobile or desktop workflow and receive:
 
-**Design commitments influenced by Aisha**
+* a short caption in her tone of voice
+* 5‑10 context‑aware hashtags optimised for reach
 
-| Promise                | Design consequence                                             |
-| ---------------------- | -------------------------------------------------------------- |
-| Zero friction          | Single REST endpoint (`/generate-caption`) callable via `curl` |
-| Timely trend awareness | Overnight automated re‑training on fresh InstaCities data      |
-| Mobile‑first speed     | P90 end‑to‑end latency < 2 s; GPU‑backed autoscaling           |
+Design promises—and how the code meets them:
 
-**Scale (May 2025)**
+| Need              | Implementation in the repo                                                                                                                               |
+| ----------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| One‑step usage    | HTTP `POST /generate-caption` in the [FastAPI app](https://github.com/nishant-ai/Snap2Caption/blob/main/base_api/fastapi_app.py)                         |
+| < 2 s P90 latency | Lightweight inference stack written in Python; model cached on start‑up; no heavy image preprocessing                                                    |
+| Fresh hashtags    | Model can be re‑trained offline with new data via scripts in [`training_scripts`](https://github.com/nishant-ai/Snap2Caption/tree/main/training_scripts) |
 
-| Component             | Value today                      | 12‑month projection   |
-| --------------------- | -------------------------------- | --------------------- |
-| Training data volume  | 50 GB (100 k images)             | 1 M images (≈ 500 GB) |
-| Fine‑tuned model size | 14 GB FP16 (LLaVA‑1.5‑7B + LoRA) | 8 GB INT8 distilled   |
-| Training duration     | 5 h on 4× A100‑80G               | 3 h with DDP + FP8    |
-| Peak inference load   | 300 req / h                      | 5 000 req / h         |
+**Current scale** (May 2025)
 
----
-
-## From Pixels to Parquet — **Data Foundations**  *(Unit 8)*
-
-The nightly ETL pipeline fetches raw JPEGs from InstaCities, validates and resizes them to `300×300`, wraps each in a chat template, then materialises Parquet manifests. Splits are stratified 80 / 10 / 10 by *user* to prevent leakage. Processed images live in a Ceph‑backed object store; metadata in Parquet drives training and offline tests.
-
-| Persistent mount               | Purpose                   | Size  |
-| ------------------------------ | ------------------------- | ----- |
-| `/mnt/object/snap2caption-raw` | Raw & processed images    | 50 GB |
-| `/mnt/block/checkpoints`       | Model & tokenizer weights | 25 GB |
-| `/mnt/block/experiments`       | Offline W\&B cache        | 10 GB |
-
-During production, each inference and user rating is streamed via Kafka into `/mnt/block/online_events`. A Spark batch joins engagement metrics, computes KL‑drift, and—if drift > 0.15—raises a Prometheus alert that triggers the automated re‑train job.
+| Item                         | Figure                |
+| ---------------------------- | --------------------- |
+| Training images used in demo | 100 k (≈ 5 GB)        |
+| Fine‑tuned checkpoint        | 14 GB FP16            |
+| Observed peak load (staging) | \~300 requests / hour |
 
 ---
 
-## Teaching the Model — **Training & Experimentation**  *(Units 4 & 5)*
+## 2 · Data & Training *(Units 4, 5 & 8)*
 
-We cast caption + hashtag generation as *image‑conditioned sequence generation*. The model of record is **LLaVA‑1.5‑7B** fine‑tuned with rank‑16 LoRA adapters.
+All model development lives inside the **`training_scripts`** directory. It contains:
 
-| Element                  | Implementation reference                                                                                                                                                           |
-| ------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Training scripts         | [https://github.com/nishant-ai/Snap2Caption/tree/main/training\_scripts](https://github.com/nishant-ai/Snap2Caption/tree/main/training_scripts)                                    |
-| Full training pipeline   | [https://github.com/nishant-ai/Snap2Caption/tree/training-pipeline](https://github.com/nishant-ai/Snap2Caption/tree/training-pipeline)                                             |
-| W\&B experiment notebook | [https://github.com/nishant-ai/Snap2Caption/blob/main/training\_scripts/code\_wandb.ipynb](https://github.com/nishant-ai/Snap2Caption/blob/main/training_scripts/code_wandb.ipynb) |
+* `finetune_lora.py` – LoRA fine‑tuning driver for LLaVA‑1.5‑7B
+* `dataset_loader.py` – minimal loader for InstaCities‑style JPEG + caption rows
+* `code_wandb.ipynb` – interactive notebook that logs experiments to Weights & Biases
 
-*Distributed training (DDP + FP16) cut wall‑clock from 8 h → 5 h while BLEU‑4 improved to 0.31.* Weekly CronJob retrains, or Prometheus fires an on‑demand run when drift is detected.
-
----
-
-## Shipping Intelligence — **Infrastructure & Continuous Delivery**  *(Units 2 & 3)*
-
-All infrastructure is codified and repeatable:
-
-| Layer             | Repository location                                                                                                              |
-| ----------------- | -------------------------------------------------------------------------------------------------------------------------------- |
-| Terraform         | [https://github.com/nishant-ai/Snap2Caption/tree/main/tf](https://github.com/nishant-ai/Snap2Caption/tree/main/tf)               |
-| Ansible           | [https://github.com/nishant-ai/Snap2Caption/tree/main/ansible](https://github.com/nishant-ai/Snap2Caption/tree/main/ansible)     |
-| Kubernetes        | [https://github.com/nishant-ai/Snap2Caption/tree/main/k8s](https://github.com/nishant-ai/Snap2Caption/tree/main/k8s)             |
-| CI / CD Workflows | [https://github.com/nishant-ai/Snap2Caption/tree/main/workflows](https://github.com/nishant-ai/Snap2Caption/tree/main/workflows) |
-
-GitHub Actions builds every commit; Argo CD syncs to **staging**. Argo Rollouts governs progressive promotion to **canary** and **prod**; models advance automatically after SLOs stay green for 24 h. When data‑drift alerts post a GitHub Release, the same pipeline re‑trains and redeploys, closing the loop.
-
-**Chameleon quick‑start**
+Training is executed locally or on a GPU node with:
 
 ```bash
-# provision GPU K8s + storage via Terraform
-make chi-init && make chi-apply
-
-# bootstrap Argo CD (Ansible playbook)
-make argocd-bootstrap
-
-# monitor rollout, then try the API
-make argocd-watch &
-python demo_request.py sample.jpg
+python training_scripts/finetune_lora.py \
+  --config configs/finetune_a100.yaml
 ```
+
+Artifacts are written to `output/` and can be copied into the serving container.
 
 ---
 
-## Serving the Magic — **Real‑time Inference & Evaluation**  *(Units 6 & 7)*
+## 3 · Model Serving *(Units 6 & 7)*
 
-Serving stack:
+Production inference code is packaged in **`base_api`**:
 
-| Component              | Link                                                                                                                                                                 |
-| ---------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Base API package       | [https://github.com/nishant-ai/Snap2Caption/tree/main/base\_api](https://github.com/nishant-ai/Snap2Caption/tree/main/base_api)                                      |
-| FastAPI endpoint       | [https://github.com/nishant-ai/Snap2Caption/blob/main/base\_api/fastapi\_app.py](https://github.com/nishant-ai/Snap2Caption/blob/main/base_api/fastapi_app.py)       |
-| Model invocation logic | [https://github.com/nishant-ai/Snap2Caption/blob/main/base\_api/model.py](https://github.com/nishant-ai/Snap2Caption/blob/main/base_api/model.py)                    |
-| Feedback loop backend  | [https://github.com/nishant-ai/Snap2Caption/blob/main/base\_api/store\_feedback.py](https://github.com/nishant-ai/Snap2Caption/blob/main/base_api/store_feedback.py) |
+* [`fastapi_app.py`](https://github.com/nishant-ai/Snap2Caption/blob/main/base_api/fastapi_app.py) — REST server exposing `/generate-caption`.
+* [`model.py`](https://github.com/nishant-ai/Snap2Caption/blob/main/base_api/model.py) — model loader + generation routine.
+* [`store_feedback.py`](https://github.com/nishant-ai/Snap2Caption/blob/main/base_api/store_feedback.py) — persists optional user ratings for later re‑training.
 
-The FastAPI server loads an 8‑bit ONNX checkpoint, decodes images with turbo‑JPEG, and answers:
+Typical request/response:
 
 ```http
 POST /generate-caption
-{ "image_base64": "…" }
+{ "image_base64": "..." }
 → 200 OK
-{ "caption": "Golden hour coffee vibes ☕🌇", "hashtags": ["#citysunset", …] }
+{ "caption": "Golden‑hour coffee vibes ☕", "hashtags": ["#citysunset", "#cafeculture", ...] }
 ```
 
-KEDA scales replicas 0 → 10 based on queue depth. Offline tests (`pytest`), load tests (`locust`) and Grafana dashboards validate quality and performance before promotion.
-
 ---
 
-## Frontend Touchpoint
+## 4 · Infrastructure as Code *(Units 2 & 3)*
 
-A lightweight React front‑end consumes the API and showcases caption suggestions:
-[https://github.com/nishant-ai/Snap2Caption/tree/main/frontend](https://github.com/nishant-ai/Snap2Caption/tree/main/frontend)
+| Layer          | Description                                               | Directory                                                                     |
+| -------------- | --------------------------------------------------------- | ----------------------------------------------------------------------------- |
+| Terraform      | Allocates GPU VM, VPC, and S3 bucket on Chameleon         | [`tf`](https://github.com/nishant-ai/Snap2Caption/tree/main/tf)               |
+| Ansible        | Installs Docker, NVIDIA drivers, and pulls runtime images | [`ansible`](https://github.com/nishant-ai/Snap2Caption/tree/main/ansible)     |
+| Kubernetes     | Optional manifests for container orchestration            | [`k8s`](https://github.com/nishant-ai/Snap2Caption/tree/main/k8s)             |
+| GitHub Actions | CI pipeline for build, push, and lint                     | [`workflows`](https://github.com/nishant-ai/Snap2Caption/tree/main/workflows) |
 
----
-
-## Repository Atlas
-
-| Area                       | Real link                                                                                                                                       |
-| -------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
-| Infrastructure (Terraform) | [https://github.com/nishant-ai/Snap2Caption/tree/main/tf](https://github.com/nishant-ai/Snap2Caption/tree/main/tf)                              |
-| Configuration (Ansible)    | [https://github.com/nishant-ai/Snap2Caption/tree/main/ansible](https://github.com/nishant-ai/Snap2Caption/tree/main/ansible)                    |
-| K8s manifests              | [https://github.com/nishant-ai/Snap2Caption/tree/main/k8s](https://github.com/nishant-ai/Snap2Caption/tree/main/k8s)                            |
-| CI/CD workflows            | [https://github.com/nishant-ai/Snap2Caption/tree/main/workflows](https://github.com/nishant-ai/Snap2Caption/tree/main/workflows)                |
-| Model training scripts     | [https://github.com/nishant-ai/Snap2Caption/tree/main/training\_scripts](https://github.com/nishant-ai/Snap2Caption/tree/main/training_scripts) |
-| Full training pipeline     | [https://github.com/nishant-ai/Snap2Caption/tree/training-pipeline](https://github.com/nishant-ai/Snap2Caption/tree/training-pipeline)          |
-| Serving code               | [https://github.com/nishant-ai/Snap2Caption/tree/main/base\_api](https://github.com/nishant-ai/Snap2Caption/tree/main/base_api)                 |
-| Frontend (React)           | [https://github.com/nishant-ai/Snap2Caption/tree/main/frontend](https://github.com/nishant-ai/Snap2Caption/tree/main/frontend)                  |
-
----
-
-## Local Taste Test
+### Chameleon one‑shot deployment
 
 ```bash
+# 1 · Provision resources
+cd tf && terraform init && terraform apply -auto-approve
+
+# 2 · Configure VM
+ansible-playbook ansible/site.yml -i ansible/inventory
+
+# 3 · Run serving container
+ssh <vm_ip>
+docker compose -f base_api/docker-compose.yml up -d
+```
+
+---
+
+## 5 · Frontend Preview
+
+A React demo lives in [`frontend`](https://github.com/nishant-ai/Snap2Caption/tree/main/frontend). Point it at the FastAPI host to try caption generation in the browser.
+
+---
+
+## 6 · Repository Map (quick reference)
+
+| Area                        | Path                 |
+| --------------------------- | -------------------- |
+| Model serving (FastAPI)     | `base_api/`          |
+| Training scripts            | `training_scripts/`  |
+| Infrastructure – Terraform  | `tf/`                |
+| Infrastructure – Ansible    | `ansible/`           |
+| Infrastructure – Kubernetes | `k8s/`               |
+| CI/CD workflows             | `.github/workflows/` |
+| React front‑end             | `frontend/`          |
+
+---
+
+## 7 · Run a Local Demo
+
+```bash
+# build image
 make docker-build
+# start API on localhost:8000
 make docker-run
+# call it
 python demo_request.py sample.jpg
 ```
 
