@@ -175,6 +175,24 @@ uvicorn inference_server_setup:app --host 0.0.0.0 --port 8000
 ```
 
 Access Swagger docs at: [http://localhost:8000/docs](http://localhost:8000/docs)
+
+FastAPI inference endpoint:
+http://129.114.109.50:8000/generate_caption
+
+🔗 Feedback handling API:
+-[store_feedback.py](https://github.com/nishant-ai/Snap2Caption/blob/main/base_api/store_feedback.py)
+
+Start the Feedback API:
+```bash
+source minio_config.sh && uvicorn store_feedback:app --host 0.0.0.0 --port 8010
+```
+Those feedback samples are then:
+
+1.Annotated in Label Studio.
+
+2.Used for retraining and fine-tuning the captioning model.
+
+
 ## 🗄️ Unit 8: Persistent Storage & Data Services
 
 ### 💾 Centralized Block Storage at KVM@TACC
@@ -246,11 +264,8 @@ Downloads the InstaCities1M.zip dataset using aria2 for fast, parallelized downl
 
 🔹 Transform
 Filters image-caption pairs for the following cities:
-
-css
-Copy
-Edit
 ["newyork", "chicago", "sanfrancisco"]
+
 Converts all folder names to lowercase for consistency.
 
 Verifies and matches each image to a valid caption.
@@ -260,17 +275,14 @@ Uploads the cleaned and structured dataset to Chameleon Object Storage.
 
 Container: object-persist-sbb9447-project54
 
-Accessible at: Chameleon UC Dashboard
+Accessible at: [Chameleon UC Dashboard - Object Storage]("https://chi.uc.chameleoncloud.org/project/containers/container/object-persist-sbb9447-project54")
 
 📦 Storage Volume
-All dataset stages are persisted under the volume:
+All dataset stages are persisted under the volume: instacities1m
 
-nginx
-
-instacities1m
 🔗 Code References
 See the extract-data, transform-data, and load-data services in
-docker-compose.yml
+[docker-compose.yml]("https://github.com/nishant-ai/Snap2Caption/blob/main/docker-compose.yml")
 
 🧹 Data Split & Preprocessing
 Dataset was shuffled and split using an 80/10/10 ratio:
