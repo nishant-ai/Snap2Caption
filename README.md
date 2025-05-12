@@ -48,6 +48,100 @@ Artifacts are written to `output/` and can be copied into the serving container.
 
 ---
 
+## 🧠 Unit 4 & 5: Model Training
+
+### 🎯 Modeling
+
+We use **LLaVA models** for multimodal caption generation:
+
+- [LLaVA-1.5 (7B, Vicuna backend)](https://huggingface.co/llava-hf/llava-1.5-7b-hf)
+- [LLaVA-1.6 (7B, Mistral backend)](https://huggingface.co/llava-hf/llava-v1.6-mistral-7b-hf)
+
+These models are fine-tuned using **LoRA adapters** for parameter-efficient adaptation on the **InstaCities1M** dataset, where each image is mapped to a caption.
+
+- **Input**: RGB image (preprocessed to 224x224)  
+- **Output**: Natural language caption (generated via autoregressive decoding)
+
+🔗 [training.py](https://github.com/nishant-ai/Snap2Caption/blob/training-pipeline/training.py)
+
+---
+
+### 🏗️ Infrastructure: Training Environment (Docker)
+
+To ensure portability and reproducibility, we define our full training environment in:
+
+🔗 [Dockerfile.trainingenv](https://github.com/nishant-ai/Snap2Caption/blob/training-pipeline/Dockerfile.trainingenv)
+
+It includes:
+- Python 3.10
+- PyTorch 2.2.1 + CUDA 12.1
+- MLflow, HuggingFace Hub, LoRA support
+- Pillow, Lightning, Tensorboard, etc.
+
+**Build the image:**
+
+```bash
+docker build -f Dockerfile.trainingenv -t snap2caption-train .
+```
+
+**Run training inside the container:**
+
+```bash
+docker run --rm --gpus all \
+  -v /mnt/dataset:/mnt/dataset \
+  -v $(pwd)/configs:/configs \
+  -v $(pwd)/outputs:/app/outputs \
+  snap2caption-train \
+  python training.py --config /configs/config.yaml
+```
+
+---
+### ⚙️ Configuration-Driven Pipeline
+
+We use a dynamic YAML-based configuration system to control the training pipeline.
+
+🔗 [config.yaml](https://github.com/nishant-ai/Snap2Caption/blob/training-pipeline/config.yaml)  
+🔗 [commands.txt](https://github.com/nishant-ai/Snap2Caption/blob/training-pipeline/commands.txt)
+
+- `config.yaml` defines:
+  - Dataset paths and per-city sampling
+  - LoRA hyperparameters (e.g., learning rate, rank, batch size)
+  - MLflow logging and model registration behavior
+  - Final evaluation and model output path
+
+- `commands.txt` includes:
+  - **All shell commands required to build the Docker container**
+  - **Run the training pipeline end-to-end**
+  - **Perform inference tests or trigger retraining runs**
+
+> 💡 This file serves as a **complete reference** for executing the pipeline on any fresh Chameleon node or local setup. Just follow the commands top to bottom.
+
+---
+
+### 🔄 Train and Re-train Pipeline
+
+- **Entry point**: [training.py](https://github.com/nishant-ai/Snap2Caption/blob/training-pipeline/training.py)
+- Accepts dynamic config paths
+- Fine-tunes LLaVA with LoRA
+- Logs all metrics and artifacts to a **remote MLflow server** at KVM@TACC
+- Supports retraining on feedback data (see Unit 8)
+
+---
+### 🔍 Experiment Tracking with MLflow
+
+All training runs are tracked using **MLflow**, hosted at our central node on KVM@TACC:
+
+🌐 MLflow UI: [http://129.114.25.254:8000](http://129.114.25.254:8000)
+
+Logged details include:
+- **Parameters**: learning rate, batch size, LoRA config
+- **Metrics**: test loss, BLEU, CIDEr, token length
+- **Artifacts**: LoRA adapters, sample captions
+- **Conditional model registration**: based on evaluation performance
+
+🔗 [MLflow logging snippet (training.py#L340–370)](https://github.com/nishant-ai/Snap2Caption/blob/training-pipeline/training.py#L340)
+
+
 ## 3 · Model Serving *(Units 6 & 7)*
 
 Production inference code is packaged in **`base_api`**:
