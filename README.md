@@ -275,6 +275,46 @@ ansible-playbook ansible/site.yml -i ansible/inventory
 ssh <vm_ip>
 docker compose -f base_api/docker-compose.yml up -d
 ```
+Infrastructure Provisioning with Terraform
+Terraform was used to provision the required infrastructure on Chameleon Cloud, which included:
+
+Three Virtual Machines (VMs) for a self-managed Kubernetes cluster.
+
+Network configurations to allow secure communication between nodes.
+
+Configuration with Ansible
+After provisioning, Ansible was utilized for configuration and package installations. Key tasks included:
+
+SSH configuration and key management.
+
+Installing dependencies like Docker and Kubernetes packages.
+
+Running Ansible playbooks to configure the VMs for Kubernetes deployment.
+
+Kubernetes Deployment
+Kubernetes was deployed using Kubespray, an Ansible-based Kubernetes installer. This allowed for:
+
+Setting up a three-node Kubernetes cluster.
+
+Applying essential configurations like Docker networking and registry.
+
+Deploying the cluster in a resilient, highly-available configuration.
+
+Key Takeaways & Issues Faced
+The primary takeaways from this setup included:
+
+Understanding how to manage cloud infrastructure using Terraform and Ansible.
+
+Automating complex multi-node Kubernetes deployments with Kubespray.
+
+Issues faced included firewall configurations and SSH permission adjustments, which were resolved by updating Ansible playbooks.
+
+Next Steps
+Debug the issues in the Argo Workflows and finalize the CI/CD pipelines.
+
+Extend the deployment to include ArgoCD for continuous delivery.
+
+Optimize the resource allocation for better scalability and cost-effectiveness.
 
 ---
 
