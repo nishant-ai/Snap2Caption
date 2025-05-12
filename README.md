@@ -275,27 +275,27 @@ Uploads the cleaned and structured dataset to Chameleon Object Storage.
 
 Container: object-persist-sbb9447-project54
 
-Accessible at: [Chameleon UC Dashboard - Object Storage]("https://chi.uc.chameleoncloud.org/project/containers/container/object-persist-sbb9447-project54")
+Accessible at: [`Chameleon UC Dashboard - Object Storage`]("https://chi.uc.chameleoncloud.org/project/containers/container/object-persist-sbb9447-project54")
 
 📦 Storage Volume
 All dataset stages are persisted under the volume: instacities1m
 
 🔗 Code References
 See the extract-data, transform-data, and load-data services in
-[docker-compose.yml]("https://github.com/nishant-ai/Snap2Caption/blob/main/docker-compose.yml")
+[`docker-compose.yml`]("https://github.com/nishant-ai/Snap2Caption/blob/main/docker-compose.yml")
 
 🧹 Data Split & Preprocessing
 Dataset was shuffled and split using an 80/10/10 ratio:
-80% Training
-10% Validation
-10% Testing
+80% Training.
+10% Validation.
+10% Testing.
 Care was taken to avoid data leakage between partitions.
 
 Preprocessing Steps:
 
-Lowercased all folder and city names
-Ensured one-to-one matching between images and captions
-Removed corrupted or unmatched image-caption pairs
+Lowercased all folder and city names.
+Ensured one-to-one matching between images and captions.
+Removed corrupted or unmatched image-caption pairs.
 
 ---
 
