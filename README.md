@@ -286,21 +286,17 @@ See the extract-data, transform-data, and load-data services in
 
 🧹 Data Split & Preprocessing
 Dataset was shuffled and split using an 80/10/10 ratio:
-
 80% Training
-
 10% Validation
-
 10% Testing
-
 Care was taken to avoid data leakage between partitions.
 
 Preprocessing Steps:
+
 Lowercased all folder and city names
-
 Ensured one-to-one matching between images and captions
-
 Removed corrupted or unmatched image-caption pairs
+
 ---
 
 ### ✅ Storage Strategy Summary
