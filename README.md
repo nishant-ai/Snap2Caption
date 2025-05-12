@@ -141,25 +141,117 @@ Logged details include:
 
 🔗 [MLflow logging snippet (training.py#L340–370)](https://github.com/nishant-ai/Snap2Caption/blob/training-pipeline/training.py#L340)
 
+---
 
-## 3 · Model Serving *(Units 6 & 7)*
+## 🚀 Unit 6 & 7: Model Serving and Optimization
 
-Production inference code is packaged in **`base_api`**:
+### 🧩 Model Inference Server (FastAPI-based)
 
-* [`fastapi_app.py`](https://github.com/nishant-ai/Snap2Caption/blob/main/base_api/fastapi_app.py) — REST server exposing `/generate-caption`.
-* [`model.py`](https://github.com/nishant-ai/Snap2Caption/blob/main/base_api/model.py) — model loader + generation routine.
-* [`store_feedback.py`](https://github.com/nishant-ai/Snap2Caption/blob/main/base_api/store_feedback.py) — persists optional user ratings for later re‑training.
+This component is the **model inference server**, responsible for **serving the trained image captioning model via a production-grade FastAPI endpoint**.
 
-Typical request/response:
+It exposes a REST API where users can send an image and receive a caption in real time. This server is containerized and instrumented with monitoring hooks for production deployment.
 
-```http
-POST /generate-caption
-{ "image_base64": "..." }
-→ 200 OK
-{ "caption": "Golden‑hour coffee vibes ☕", "hashtags": ["#citysunset", "#cafeculture", ...] }
+- **API Input**: RGB image (base64-encoded JPEG or PNG)  
+- **API Output**: A generated natural language caption in JSON format
+
+The API also includes monitoring instrumentation via **Prometheus** and dashboards powered by **Grafana**, both hosted on our central KVM@TACC node.
+
+> 🌐 **Monitoring Dashboard (Hosted at KVM@TACC)**  
+> - **Floating IP**: `129.114.25.254`  
+> - **Grafana Dashboard**: [http://129.114.25.254:3000/?orgId=1&from=now-6h&to=now&timezone=browser](http://129.114.25.254:3000/?orgId=1&from=now-6h&to=now&timezone=browser)  
+> - **Prometheus Metrics UI**: [http://129.114.25.254:9090/query](http://129.114.25.254:9090/query)  
+> - **FastAPI `/metrics` Endpoint**: [http://129.114.25.254:8000/metrics](http://129.114.25.254:8000/metrics)
+
+**Main Serving Code**:
+
+- 🔗 [`inference_server_setup.py`](https://github.com/nishant-ai/Snap2Caption/blob/model_serving_endpoint/inference_server_setup.py) – Main FastAPI app with model loading and inference logic
+- 🔗 [`llava_fastapi_server.py`](https://github.com/nishant-ai/Snap2Caption/blob/model_serving_endpoint/llava_fastapi_server.py) – Optional wrapper/entry script for uvicorn
+- 🔗 [`request.py`](https://github.com/nishant-ai/Snap2Caption/blob/model_serving_endpoint/request.py) – Defines API request/response formats using Pydantic
+
+Start the API:
+
+```bash
+uvicorn inference_server_setup:app --host 0.0.0.0 --port 8000
+```
+
+Access Swagger docs at: [http://localhost:8000/docs](http://localhost:8000/docs)
+## 🗄️ Unit 8: Persistent Storage & Data Services
+
+### 💾 Centralized Block Storage at KVM@TACC
+
+We provisioned a persistent **block storage volume** on our main node at **KVM@TACC**. This storage is mounted locally using `rclone` and is used to persist the runtime data of all critical MLOps services.
+
+> 📍 Mounted at: `/mnt/<folder_name>`  
+> 🔧 Mounted using: `rclone`  
+> 🌐 Node: KVM@TACC (`129.114.25.254`)
+
+#### ⬆️ Push New Data to Block Storage
+
+```bash
+rclone copy <local_path> <remote>:<bucket_or_path>
+```
+
+Example:
+
+```bash
+rclone copy ./feedback/user123/feedback.json chameleon:mlops-data/feedback/user123/
+```
+
+#### Services Using Block Storage
+
+| Service       | Description                          |
+|---------------|--------------------------------------|
+| MLflow        | Logs experiments, artifacts          |
+| MinIO         | Hosts feedback + intermediate data   |
+| Prometheus    | Stores metrics (latency, counts)     |
+| Grafana       | Persists dashboards and settings     |
+| PostgreSQL    | Backs MLflow’s tracking DB           |
+| Ray           | For distributed job execution (future)|
+
+---
+
+### 🪣 Object Storage at CHI@UC – Dataset Hosting
+
+For hosting the **training dataset (InstaCities1M)**, we provisioned and mounted **object storage** at the **CHI@UC** site.
+
+- This allows high-throughput access during model training
+- Reduces I/O load on the central KVM node
+- Scales with storage and compute demand
+
+> 📍 Hosted on: CHI@UC  
+> 📁 Mounted via `rclone` or FUSE into the training node  
+> 🏷️ Mounted at paths like: `/mnt/images`, `/mnt/captions`
+
+#### Example Mount Command
+
+```bash
+rclone mount chameleon:instacities1m/images /mnt/images --daemon
+rclone mount chameleon:instacities1m/captions /mnt/captions --daemon
+```
+
+These paths are then passed into the training container:
+
+```bash
+docker run ... \
+  --mount type=bind,source=/mnt/images,target=/mnt/InstaCities1M/images,readonly \
+  --mount type=bind,source=/mnt/captions,target=/mnt/InstaCities1M/captions,readonly \
+  ...
 ```
 
 ---
+
+### ✅ Storage Strategy Summary
+
+| Storage Type  | Location     | Purpose                                   |
+|---------------|--------------|-------------------------------------------|
+| Block Storage | KVM@TACC     | Persistent logs, system state, feedback   |
+| Object Storage| CHI@UC       | Training datasets (images + captions)     |
+
+This hybrid setup ensures:
+- Efficient I/O for training
+- Secure persistence of all service-level data
+- Separation of concerns between system and training workloads
+
 
 ## 4 · Infrastructure as Code *(Units 2 & 3)*
 
